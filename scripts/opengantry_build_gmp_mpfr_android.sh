@@ -10,13 +10,19 @@ MPFR_URL="https://www.mpfr.org/mpfr-${MPFR_VERSION}/mpfr-${MPFR_VERSION}.tar.xz"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${1:-${OPENGANTRY_ORCA_DEPS_WORK:-/tmp/build_android_deps}}"
-ABI="${ABI:-arm64-v8a}"
+ANDROID_ABI="${ANDROID_ABI:-${ABI:-arm64-v8a}}"
+GMP_ABI="${GMP_ABI:-64}"
+unset ABI
 API_LEVEL="${API_LEVEL:-21}"
 N_CORES="${N_CORES:-$(nproc)}"
 : "${ANDROID_NDK_ROOT:?ANDROID_NDK_ROOT must point to the OpenGantry NDK r28 install}"
 
-if [[ "$ABI" != "arm64-v8a" ]]; then
-    echo "ERROR: OpenGantry fork GMP/MPFR builder currently qualifies arm64-v8a only (got $ABI)" >&2
+if [[ "$ANDROID_ABI" != "arm64-v8a" ]]; then
+    echo "ERROR: OpenGantry fork GMP/MPFR builder currently qualifies arm64-v8a only (got $ANDROID_ABI)" >&2
+    exit 1
+fi
+if [[ "$GMP_ABI" != "64" ]]; then
+    echo "ERROR: OpenGantry fork GMP build requires GMP ABI=64 for arm64-v8a (got $GMP_ABI)" >&2
     exit 1
 fi
 
@@ -40,8 +46,8 @@ SOURCES="$WORK_DIR/source-archives"
 SRCROOT="$WORK_DIR/source-trees"
 BUILDROOT="$WORK_DIR/gmp-mpfr-build"
 PREFIX="$WORK_DIR/gmp-mpfr-prefix"
-OUT_LIB="$ROOT/app/src/main/jniLibs/$ABI"
-OUT_INC="$ROOT/app/src/main/jniImports/gmp/include/$ABI"
+OUT_LIB="$ROOT/app/src/main/jniLibs/$ANDROID_ABI"
+OUT_INC="$ROOT/app/src/main/jniImports/gmp/include/$ANDROID_ABI"
 mkdir -p "$SOURCES" "$SRCROOT" "$OUT_LIB" "$OUT_INC"
 
 fetch() {
@@ -83,9 +89,9 @@ export CFLAGS="$COMMON_CFLAGS"
 export CXXFLAGS="$COMMON_CXXFLAGS"
 export LDFLAGS="$LINK_FLAGS"
 
-echo "--- Building GMP $GMP_VERSION for $ABI with NDK r28 ---"
+echo "--- Building GMP $GMP_VERSION for $ANDROID_ABI (GMP ABI=$GMP_ABI) with NDK r28 ---"
 cd "$BUILDROOT/gmp"
-"$GMP_SRC/configure" \
+ABI="$GMP_ABI" "$GMP_SRC/configure" \
     --build="$BUILD_TRIPLE" \
     --host="$TARGET" \
     --prefix="$PREFIX" \
