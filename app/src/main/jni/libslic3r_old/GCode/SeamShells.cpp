@@ -1,7 +1,7 @@
 #include "libslic3r/GCode/SeamShells.hpp"
 #include "libslic3r/ClipperUtils.hpp"
-#include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 
 namespace Slic3r::Seams::Shells::Impl {
 

@@ -10,6 +10,8 @@ include(CheckCSourceCompiles)
 
 project(SliceBeam)
 cmake_minimum_required(VERSION 3.4.1)
+# OPENGANTRY_16K_LINK_COMPAT
+add_link_options("-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,7 +46,7 @@ endif()
 set(BOOST_LIBS atomic charconv chrono container context contract coroutine date_time exception fiber
         filesystem graph iostreams json log log_setup math_c99 math_c99f math_c99l math_tr1 math_tr1f
         math_tr1l nowide prg_exec_monitor program_options random regex serialization stacktrace_basic
-        stacktrace_noop system test_exec_moinotr thread timer type_erasure unit_test_framework url wave
+        stacktrace_noop system test_exec_monitor thread timer type_erasure unit_test_framework url wave
         wserialization)
 
 foreach (NAME IN LISTS BOOST_LIBS)

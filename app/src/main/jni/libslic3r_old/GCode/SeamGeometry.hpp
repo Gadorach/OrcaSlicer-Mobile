@@ -5,8 +5,8 @@
 #include "libslic3r/ExPolygon.hpp"
 #include "libslic3r/AABBTreeLines.hpp"
 #include "libslic3r/Point.hpp"
-#include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 #include <vector>
 #include "tcbspan/span.hpp"
 

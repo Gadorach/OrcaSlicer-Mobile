@@ -4,8 +4,8 @@
 #include "Layer.hpp"
 #include <fstream>
 #include <numeric>
-#include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 
 namespace Slic3r::Seams::Geometry {
 

@@ -20,7 +20,7 @@
 #include <sstream>
 #include <unordered_map>
 
-#include <oneapi/tbb/scalable_allocator.h>
+#include <tbb/scalable_allocator.h>
 
 
 #include <Eigen/Geometry> 

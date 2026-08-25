@@ -32,8 +32,8 @@
 #include <functional>
 #include <limits>
 #include <math.h>
-#include <oneapi/tbb/concurrent_vector.h>
-#include <oneapi/tbb/parallel_for.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>

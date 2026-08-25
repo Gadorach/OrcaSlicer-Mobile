@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# OPENGANTRY_16K_DEP_LINK_COMPAT
+# NDK r28 defaults to flexible/16 KiB ELF alignment, and these flags
+# keep Autoconf/libtool and dependency-specific linkers explicit.
+export OPENGANTRY_16K_LDFLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
+export LDFLAGS="${LDFLAGS:-} ${OPENGANTRY_16K_LDFLAGS}"
+export CFLAGS="${CFLAGS:-} -D__BIONIC_NO_PAGE_SIZE_MACRO"
+export CXXFLAGS="${CXXFLAGS:-} -D__BIONIC_NO_PAGE_SIZE_MACRO"
+
 echo "======================================================================="
 echo " Building SliceBeam Native Dependencies (Boost, oneTBB, OCCT, GMP/MPFR)"
 echo " This process will download and compile massive C++ libraries from source"
 echo " using the Android NDK. This will take several hours."
 echo "======================================================================="
 
-export ANDROID_SDK_ROOT="/home/cody/android-sdk"
-export ANDROID_NDK_ROOT="/home/cody/android-sdk/ndk/23.1.7779620"
-export CMAKE_BIN="cmake"
+export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
+export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_SDK_ROOT/ndk/28.2.13676358}"
+export CMAKE_BIN="${CMAKE_BIN:-cmake}"
 export ABI="arm64-v8a"
 export API_LEVEL="21"
-export N_CORES=$(nproc)
+export N_CORES="${N_CORES:-$(nproc)}"
 
-JNI_IMPORTS_DIR="$(pwd)/app/src/main/jniImports"
+ORCA_ROOT="${OPENGANTRY_ORCA_ROOT:-$(pwd)}"
+JNI_IMPORTS_DIR="$ORCA_ROOT/app/src/main/jniImports"
 mkdir -p "$JNI_IMPORTS_DIR"
 
-WORK_DIR="/tmp/build_android_deps"
+WORK_DIR="${OPENGANTRY_ORCA_DEPS_WORK:-/tmp/build_android_deps}"
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
 
@@ -38,6 +47,9 @@ $CMAKE_BIN \
   -DANDROID_NATIVE_API_LEVEL=$API_LEVEL \
   -DANDROID_STL=c++_shared \
   -DCMAKE_BUILD_TYPE=Release \
+  -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
+  -DCMAKE_SHARED_LINKER_FLAGS="$OPENGANTRY_16K_LDFLAGS" \
+  -DCMAKE_MODULE_LINKER_FLAGS="$OPENGANTRY_16K_LDFLAGS" \
   -DCMAKE_INSTALL_PREFIX=$(pwd)/dist \
   -DTBB_BUILD_TESTS=Off \
   -DTBB_BUILD_SHARED=Off \
@@ -70,7 +82,7 @@ cd Boost-for-Android
 mkdir -p "$JNI_IMPORTS_DIR/boost/lib/$ABI/lib"
 cp -r build/out/arm64-v8a/lib/*.a "$JNI_IMPORTS_DIR/boost/lib/$ABI/lib/"
 mkdir -p "$JNI_IMPORTS_DIR/boost/include"
-cp -r build/out/arm64-v8a/include/* "$JNI_IMPORTS_DIR/boost/include/"
+cp -aL build/out/arm64-v8a/include/boost-1_85/. "$JNI_IMPORTS_DIR/boost/include/"
 cd ..
 echo "--- Boost built and copied! ---"
 
@@ -87,6 +99,9 @@ $CMAKE_BIN \
   -DANDROID_NATIVE_API_LEVEL=$API_LEVEL \
   -DANDROID_STL=c++_shared \
   -DCMAKE_BUILD_TYPE=Release \
+  -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
+  -DCMAKE_SHARED_LINKER_FLAGS="$OPENGANTRY_16K_LDFLAGS" \
+  -DCMAKE_MODULE_LINKER_FLAGS="$OPENGANTRY_16K_LDFLAGS" \
   -DBUILD_LIBRARY_TYPE=Shared \
   -DUSE_FREETYPE=OFF \
   ..
@@ -94,9 +109,11 @@ make -j$N_CORES
 mkdir -p "$JNI_IMPORTS_DIR/../occt/jniLibs/$ABI"
 cp lin64/clang/lib/*.so "$JNI_IMPORTS_DIR/../occt/jniLibs/$ABI/"
 mkdir -p "$JNI_IMPORTS_DIR/../occt/include/$ABI"
-cp -r include/opencascade/* "$JNI_IMPORTS_DIR/../occt/include/$ABI/"
+cp -aL include/opencascade/. "$JNI_IMPORTS_DIR/../occt/include/$ABI/"
 cd ../..
 echo "--- OCCT built and copied! ---"
+bash "$ORCA_ROOT/scripts/opengantry_build_gmp_mpfr_android.sh" "$WORK_DIR"
+python3 "$ORCA_ROOT/scripts/opengantry_normalize_android_deps.py" --work-dir "$WORK_DIR"
 
 echo "======================================================================="
 echo " DONE!"

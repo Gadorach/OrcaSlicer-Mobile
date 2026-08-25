@@ -28,7 +28,7 @@ cd OrcaSlicer-Mobile
 ./gradlew assembleDebug
 ```
 
-- Android SDK 35, NDK `23.1.7779620`
+- Android SDK 35, NDK `28.2.13676358` (OpenGantry fork)
 - The native engine (libslic3r + dependencies) builds via CMake on the first build — expect it to take a while
 - Prebuilt native dependencies not stored in git (Boost, oneTBB, OCCT, GMP/MPFR) are expected under `app/src/main/jniImports/` and `app/src/main/occt/`
 - The output APK lands in `app/build/outputs/apk/debug/`

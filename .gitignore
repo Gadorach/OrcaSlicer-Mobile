@@ -55,3 +55,10 @@ compile_mocks.txt
 /benchy.gcode
 /benchy_new.gcode
 app/screen.png
+
+# OpenGantry local-fork generated/NDK-supplied arm64 runtime
+app/src/main/jniLibs/arm64-v8a/libc++_shared.so
+app/src/main/jniLibs/arm64-v8a/libgmp.so
+app/src/main/jniLibs/arm64-v8a/libgmpxx.so
+app/src/main/jniLibs/arm64-v8a/libmpfr.so
+app/src/main/jniImports/gmp/include/arm64-v8a/
