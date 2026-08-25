@@ -8,6 +8,8 @@ Android compatibility changes required by the OpenGantry integration:
 - Android NDK `28.2.13676358` for native application and dependency builds.
 - 16 KiB ELF page-size linker flags for Android shared libraries.
 - Boost.Test `test_exec_moinotr` typo corrected to `test_exec_monitor`.
+- Vendored zlib declares Android POSIX file-descriptor I/O through `<unistd.h>`,
+  required by NDK r28 / Clang 19 for `read`, `write`, `lseek`, and `close`.
 - All 23 `oneapi/tbb/...` include occurrences in the pinned 0.4.6 source mapped
   to the legacy `tbb/...` API tree actually produced by its Android dependency builder.
 - Boost/OCCT generated-header layout normalization after dependency builds.

@@ -30,6 +30,10 @@
 #endif
 #include <fcntl.h>
 
+#if defined(__ANDROID__)
+#  include <unistd.h>  /* OPENGANTRY_ANDROID_POSIX_IO: read/write/lseek/close */
+#endif
+
 #ifdef _WIN32
 #  include <stddef.h>
 #endif
