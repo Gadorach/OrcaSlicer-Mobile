@@ -78,60 +78,77 @@ verify "$MPFR_SHA256" "$MPFR_ARCHIVE"
 
 GMP_SRC="$SRCROOT/gmp-${GMP_VERSION}"
 MPFR_SRC="$SRCROOT/mpfr-${MPFR_VERSION}"
-rm -rf "$GMP_SRC" "$MPFR_SRC" "$BUILDROOT" "$PREFIX"
-tar -C "$SRCROOT" -xf "$GMP_ARCHIVE"
-tar -C "$SRCROOT" -xf "$MPFR_ARCHIVE"
+if [[ ! -x "$GMP_SRC/configure" ]]; then
+    rm -rf "$GMP_SRC"
+    tar -C "$SRCROOT" -xf "$GMP_ARCHIVE"
+fi
+if [[ ! -x "$MPFR_SRC/configure" ]]; then
+    rm -rf "$MPFR_SRC"
+    tar -C "$SRCROOT" -xf "$MPFR_ARCHIVE"
+fi
 mkdir -p "$BUILDROOT/gmp" "$BUILDROOT/mpfr" "$PREFIX"
-BUILD_TRIPLE="$(cd "$GMP_SRC" && ./config.guess)"
+# config.guess on optimized Arch/CachyOS hosts can emit CPU-tuned names such as
+# haswell-pc-linux-gnu. Older MPFR config.sub rejects those even though the
+# actual build machine is ordinary x86_64 GNU/Linux. Use the canonical GNU
+# build triple for the linux-x86_64 host toolchain this helper supports.
+BUILD_TRIPLE="${BUILD_TRIPLE:-x86_64-pc-linux-gnu}"
 
 export CC CXX AR RANLIB NM STRIP
 export CFLAGS="$COMMON_CFLAGS"
 export CXXFLAGS="$COMMON_CXXFLAGS"
 export LDFLAGS="$LINK_FLAGS"
 
-echo "--- Building GMP $GMP_VERSION for $ANDROID_ABI (GMP ABI=$GMP_ABI) with NDK r28 ---"
-cd "$BUILDROOT/gmp"
-ABI="$GMP_ABI" "$GMP_SRC/configure" \
-    --build="$BUILD_TRIPLE" \
-    --host="$TARGET" \
-    --prefix="$PREFIX" \
-    --enable-cxx \
-    --disable-shared \
-    --enable-static \
-    --with-pic
-make -j"$N_CORES"
-make install
+gmp_complete() {
+    [[ -f "$PREFIX/lib/libgmp.a" ]] &&
+    [[ -f "$PREFIX/lib/libgmpxx.a" ]] &&
+    [[ -f "$PREFIX/include/gmp.h" ]] &&
+    [[ -f "$PREFIX/include/gmpxx.h" ]] &&
+    [[ -f "$OUT_LIB/libgmp.so" ]] &&
+    [[ -f "$OUT_LIB/libgmpxx.so" ]]
+}
 
-echo "--- Linking Android-facing unversioned GMP shared libraries ---"
-"$CC" --shared $LINK_FLAGS -Wl,-soname,libgmp.so \
-    -Wl,--whole-archive "$PREFIX/lib/libgmp.a" -Wl,--no-whole-archive \
-    -ldl -lm -o "$OUT_LIB/libgmp.so"
-"$CXX" --shared $LINK_FLAGS -Wl,-soname,libgmpxx.so \
-    -Wl,--whole-archive "$PREFIX/lib/libgmpxx.a" -Wl,--no-whole-archive \
-    -L"$OUT_LIB" -Wl,-rpath-link,"$OUT_LIB" -lgmp -ldl -lm \
-    -o "$OUT_LIB/libgmpxx.so"
+mpfr_complete() {
+    [[ -f "$PREFIX/lib/libmpfr.a" ]] &&
+    [[ -f "$PREFIX/include/mpfr.h" ]] &&
+    [[ -f "$PREFIX/include/mpf2mpfr.h" ]] &&
+    [[ -f "$OUT_LIB/libmpfr.so" ]]
+}
 
-echo "--- Building MPFR $MPFR_VERSION against GMP $GMP_VERSION ---"
-cd "$BUILDROOT/mpfr"
-CPPFLAGS="-I$PREFIX/include" \
-LDFLAGS="-L$OUT_LIB -L$PREFIX/lib $LINK_FLAGS" \
-"$MPFR_SRC/configure" \
-    --build="$BUILD_TRIPLE" \
-    --host="$TARGET" \
-    --prefix="$PREFIX" \
-    --with-gmp="$PREFIX" \
-    --disable-shared \
-    --enable-static
-make -j"$N_CORES"
-make install
+if gmp_complete; then
+    echo "[RESUME] GMP $GMP_VERSION outputs already complete; preserving them."
+else
+    echo "--- Building GMP $GMP_VERSION for $ANDROID_ABI (GMP ABI=$GMP_ABI) with NDK r28 ---"
+    rm -rf "$BUILDROOT/gmp" "$PREFIX"
+    mkdir -p "$BUILDROOT/gmp" "$PREFIX"
+    cd "$BUILDROOT/gmp"
+    ABI="$GMP_ABI" "$GMP_SRC/configure"         --build="$BUILD_TRIPLE"         --host="$TARGET"         --prefix="$PREFIX"         --enable-cxx         --disable-shared         --enable-static         --with-pic
+    make -j"$N_CORES"
+    make install
 
-"$CC" --shared $LINK_FLAGS -Wl,-soname,libmpfr.so \
-    -Wl,--whole-archive "$PREFIX/lib/libmpfr.a" -Wl,--no-whole-archive \
-    -L"$OUT_LIB" -Wl,-rpath-link,"$OUT_LIB" -lgmp -ldl -lm \
-    -o "$OUT_LIB/libmpfr.so"
+    echo "--- Linking Android-facing unversioned GMP shared libraries ---"
+    "$CC" --shared $LINK_FLAGS -Wl,-soname,libgmp.so         -Wl,--whole-archive "$PREFIX/lib/libgmp.a" -Wl,--no-whole-archive         -ldl -lm -o "$OUT_LIB/libgmp.so"
+    "$CXX" --shared $LINK_FLAGS -Wl,-soname,libgmpxx.so         -Wl,--whole-archive "$PREFIX/lib/libgmpxx.a" -Wl,--no-whole-archive         -L"$OUT_LIB" -Wl,-rpath-link,"$OUT_LIB" -lgmp -ldl -lm         -o "$OUT_LIB/libgmpxx.so"
+fi
 
-cp -f "$PREFIX/include/gmp.h" "$PREFIX/include/gmpxx.h" \
-    "$PREFIX/include/mpfr.h" "$PREFIX/include/mpf2mpfr.h" "$OUT_INC/"
+# Publish GMP headers as soon as GMP is complete so a failed MPFR stage can
+# resume without making Orca's dependency readiness look like a GMP failure.
+cp -f "$PREFIX/include/gmp.h" "$PREFIX/include/gmpxx.h" "$OUT_INC/"
+
+if mpfr_complete; then
+    echo "[RESUME] MPFR $MPFR_VERSION outputs already complete; preserving them."
+else
+    echo "--- Building MPFR $MPFR_VERSION against GMP $GMP_VERSION ---"
+    rm -rf "$BUILDROOT/mpfr"
+    mkdir -p "$BUILDROOT/mpfr"
+    cd "$BUILDROOT/mpfr"
+    CPPFLAGS="-I$PREFIX/include"     LDFLAGS="-L$OUT_LIB -L$PREFIX/lib $LINK_FLAGS"     "$MPFR_SRC/configure"         --build="$BUILD_TRIPLE"         --host="$TARGET"         --prefix="$PREFIX"         --with-gmp="$PREFIX"         --disable-shared         --enable-static
+    make -j"$N_CORES"
+    make install
+
+    "$CC" --shared $LINK_FLAGS -Wl,-soname,libmpfr.so         -Wl,--whole-archive "$PREFIX/lib/libmpfr.a" -Wl,--no-whole-archive         -L"$OUT_LIB" -Wl,-rpath-link,"$OUT_LIB" -lgmp -ldl -lm         -o "$OUT_LIB/libmpfr.so"
+fi
+
+cp -f "$PREFIX/include/mpfr.h" "$PREFIX/include/mpf2mpfr.h" "$OUT_INC/"
 
 for lib in libgmp.so libgmpxx.so libmpfr.so; do
     soname="$($READELF -d "$OUT_LIB/$lib" | sed -n 's/.*SONAME.*\[\(.*\)\].*/\1/p')"
