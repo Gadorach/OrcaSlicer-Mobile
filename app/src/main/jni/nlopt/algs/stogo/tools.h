@@ -36,7 +36,7 @@ public:
   friend ostream & operator << (ostream &, RCTrial) ;
 };
 
-class TrialGT : public unary_function<Trial, bool>
+class TrialGT /* OPENGANTRY_NLOPT_CXX17: std::unary_function removed in C++17 */
 // Predicate for Trial (needed for remove_if)
 {
 public:

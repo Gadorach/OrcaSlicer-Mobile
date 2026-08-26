@@ -10,6 +10,8 @@ Android compatibility changes required by the OpenGantry integration:
 - Boost.Test `test_exec_moinotr` typo corrected to `test_exec_monitor`.
 - Vendored zlib declares Android POSIX file-descriptor I/O through `<unistd.h>`,
   required by NDK r28 / Clang 19 for `read`, `write`, `lseek`, and `close`.
+- Vendored NLopt/StoGO no longer inherits from removed `std::unary_function`;
+  the comparator remains an ordinary callable under modern libc++ / C++17.
 - All 23 `oneapi/tbb/...` include occurrences in the pinned 0.4.6 source mapped
   to the legacy `tbb/...` API tree actually produced by its Android dependency builder.
 - Boost/OCCT generated-header layout normalization after dependency builds.
