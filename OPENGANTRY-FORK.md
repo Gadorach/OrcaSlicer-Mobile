@@ -1,9 +1,11 @@
-# OpenGantry OrcaSlicer-Mobile local fork
+# OpenGantry OrcaSlicer-Mobile integration fork
+
+Controlled origin: `https://github.com/Gadorach/OrcaSlicer-Mobile.git`.
 
 Base upstream commit: `546b31b989156e3ebd85b67648afef1e95a7b8df` (`0.4.6`).
 
-This branch is maintained locally by OpenGantry and intentionally carries the
-Android compatibility changes required by the OpenGantry integration:
+This branch is maintained by OpenGantry and intentionally carries the Android
+compatibility changes required by the OpenGantry integration:
 
 - Android NDK `28.2.13676358` for native application and dependency builds.
 - 16 KiB ELF page-size linker flags for Android shared libraries.
@@ -21,6 +23,6 @@ Android compatibility changes required by the OpenGantry integration:
   packages the matching NDK-r28 `c++_shared` runtime, while GMP 6.2.1 + MPFR 4.2.1
   are rebuilt from pinned release sources with unversioned Android SONAMEs.
 
-The `upstream` Git remote remains read-only by convention. No push remote is
-configured automatically. Upstream updates are fetched explicitly and merged or
-rebased into this branch only after review.
+The original `CodeMasterCody3D/OrcaSlicer-Mobile` repository is retained as the
+read-only `upstream` remote. Upstream changes are fetched explicitly and merged
+or rebased into this branch only after review.
